@@ -1,0 +1,27 @@
+# 构建产物
+main
+main.exe
+*.exe
+*.zip
+.gocache/
+.gomodcache/
+
+# 本地运行数据 / 密钥（切勿提交）
+data.json
+*.key
+session.key
+oauth.env
+*.env
+!deploy/*.example
+*.pem
+
+# 第三方分析目录
+qitian-fenxi/
+qitian-web-fenxi/
+qitian-teacherapp-fenxi/
+
+# 编辑器 / 系统
+.claude/
+.vscode/
+.idea/
+.DS_Store

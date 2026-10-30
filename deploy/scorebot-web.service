@@ -1,0 +1,21 @@
+[Unit]
+Description=ScoreBot-Go Web Adapter
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/scorebot
+ExecStart=/opt/scorebot/scorebot
+Environment="CHAT_ADAPTER=web"
+Environment="DATA_STORE=json"
+Environment="JSON_STORE_PATH=/opt/scorebot/data.json"
+Environment="WEB_ADDR=127.0.0.1:8787"
+Environment="WEB_DIR=/www/wwwroot/grade.example.com"
+Environment="SESSION_KEY_FILE=/opt/scorebot/session.key"
+# OAuth 密钥单独放在 root-only 文件里，避免出现在 service 文件与 ps 输出中
+EnvironmentFile=/opt/scorebot/oauth.env
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

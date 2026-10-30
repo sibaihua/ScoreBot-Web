@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>猫猫头的七天</title>
+<style>
+:root{
+  --bg:#ffffff; --bg-soft:#fafafa; --bg-sunken:#f4f4f5;
+  --line:#e6e6e6; --line-soft:#efefef;
+  --ink:#111111; --ink2:#5a5a5a; --ink3:#9a9a9a; --ink4:#c4c4c4;
+  --black:#000000;
+  --radius:12px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  font-size:16px; line-height:1.65; -webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+
+/* ---------- 登录遮罩 ---------- */
+.gate{position:fixed;inset:0;z-index:99;background:var(--bg);display:flex;align-items:center;justify-content:center}
+.gate-inner{width:100%;max-width:380px;padding:0 24px;text-align:center}
+.gate h1{font-size:27px;font-weight:600;letter-spacing:2px;margin:0 0 8px}
+.gate p{margin:0 0 32px;color:var(--ink3);font-size:15px}
+.gate-btn{
+  width:100%;height:50px;border:1px solid var(--black);background:var(--black);color:#fff;
+  border-radius:var(--radius);font-size:16px;font-weight:500;letter-spacing:.5px;transition:opacity .15s;
+}
+.gate-btn:hover{opacity:.82}
+.gate-btn:disabled{opacity:.45;cursor:default}
+.gate-note{margin-top:20px;color:var(--ink4);font-size:14px;line-height:1.75}
+
+/* ---------- 布局 ---------- */
+.app{display:none;min-height:100vh}
+.app.ready{display:flex}
+.sidebar{
+  width:240px;flex:none;border-right:1px solid var(--line);background:var(--bg-soft);
+  padding:24px 16px;display:flex;flex-direction:column;gap:6px;
+  position:sticky;top:0;height:100vh;
+}
+.brand{padding:0 8px 22px}
+.brand-name{font-size:17px;font-weight:600;letter-spacing:1.5px;line-height:1.35}
+.brand-sub{font-size:12.5px;color:var(--ink3);letter-spacing:.5px;margin-top:4px}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;
+  color:var(--ink2);font-size:15.5px;transition:background .12s,color .12s;
+}
+.nav-item:hover{background:var(--bg-sunken);color:var(--ink)}
+.nav-item.active{background:var(--ink);color:#fff}
+.nav-ico{width:17px;height:17px;flex:none;opacity:.75}
+.nav-item.active .nav-ico{opacity:1}
+.sidebar-foot{margin-top:auto;padding:14px 8px 0;border-top:1px solid var(--line)}
+.who{font-size:13.5px;color:var(--ink2);word-break:break-all;line-height:1.55}
+.who b{display:block;color:var(--ink);font-weight:500;font-size:14.5px}
+.logout{margin-top:10px;background:none;border:none;padding:0;color:var(--ink3);font-size:13.5px}
+.logout:hover{color:var(--ink);text-decoration:underline}
+.main{flex:1;min-width:0;padding:32px 38px 64px;max-width:1120px}
+
+.page-head{margin-bottom:26px}
+.page-title{font-size:24px;font-weight:600;letter-spacing:.5px;margin:0}
+.page-desc{font-size:14.5px;color:var(--ink3);margin:6px 0 0}
+
+/* ---------- 卡片 / 统计 ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat{border:1px solid var(--line);border-radius:var(--radius);padding:17px 18px}
+.stat-k{font-size:13px;color:var(--ink3);letter-spacing:.5px}
+.stat-v{font-size:27px;font-weight:600;margin-top:6px;letter-spacing:-.5px;line-height:1.2}
+.stat-x{font-size:13px;color:var(--ink3);margin-top:3px}
+
+.panel{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:24px}
+.panel-head{padding:15px 18px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.panel-title{font-size:15.5px;font-weight:600;letter-spacing:.3px}
+.panel-note{font-size:13px;color:var(--ink3)}
+.panel-body{padding:18px}
+
+/* ---------- 图表 ---------- */
+.chart-wrap{width:100%;overflow-x:auto}
+svg.chart{display:block;width:100%;height:232px;min-width:560px}
+.chart-grid{stroke:var(--line-soft);stroke-width:1}
+.chart-axis{stroke:var(--line);stroke-width:1}
+.chart-line{fill:none;stroke:var(--black);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+.chart-area{fill:url(#fade)}
+.chart-dot{fill:#fff;stroke:var(--black);stroke-width:1.5}
+.chart-label{fill:var(--ink3);font-size:12px;font-family:inherit}
+.chart-val{fill:var(--ink);font-size:12.5px;font-weight:600;font-family:inherit}
+
+/* ---------- 表格 ---------- */
+table{width:100%;border-collapse:collapse;font-size:15px}
+thead th{
+  text-align:left;font-weight:500;color:var(--ink3);font-size:13px;letter-spacing:.5px;
+  padding:12px 18px;border-bottom:1px solid var(--line);background:var(--bg-soft);white-space:nowrap;
+}
+tbody td{padding:14px 18px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+tbody tr{cursor:pointer;transition:background .1s}
+tbody tr:hover{background:var(--bg-soft)}
+tbody tr.open{background:var(--bg-sunken)}
+td.num{font-variant-numeric:tabular-nums;font-weight:600}
+td.dim{color:var(--ink3);font-size:14px;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;padding:2px 9px;border:1px solid var(--line);border-radius:20px;font-size:12.5px;color:var(--ink2);background:var(--bg-soft)}
+.tag.off{color:var(--ink4);border-style:dashed}
+.chev{width:12px;height:12px;color:var(--ink4);transition:transform .15s}
+tr.open .chev{transform:rotate(90deg)}
+.detail-row td{padding:0;border-bottom:1px solid var(--line-soft)}
+.detail{padding:17px 18px 20px;background:var(--bg-soft);font-size:15px}
+.detail-load{color:var(--ink3);font-size:14px}
+.subj{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:11px;margin-top:13px}
+.subj-item{border:1px solid var(--line);background:#fff;border-radius:9px;padding:11px 13px}
+.subj-n{font-size:13.5px;color:var(--ink2)}
+.subj-s{font-size:19px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+.subj-f{font-size:13px;color:var(--ink3)}
+
+/* ---------- 表单 ---------- */
+.field{margin-bottom:16px}
+.field label{display:block;font-size:14px;color:var(--ink2);margin-bottom:7px;letter-spacing:.3px}
+input[type=text],input[type=password],select{
+  width:100%;height:44px;padding:0 13px;border:1px solid var(--line);border-radius:9px;
+  background:#fff;color:var(--ink);font-family:inherit;font-size:15.5px;outline:none;transition:border-color .12s;
+}
+input:focus,select:focus{border-color:var(--ink)}
+select.sm{height:38px;padding:0 12px;font-size:14.5px}
+.btn{height:44px;padding:0 20px;border:1px solid var(--black);background:var(--black);color:#fff;border-radius:9px;font-size:15.5px;font-weight:500;transition:opacity .15s}
+.btn:hover{opacity:.82}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.ghost{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn.danger{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn.danger:hover{background:var(--bg-sunken)}
+.btn.sm{height:38px;padding:0 14px;font-size:14.5px}
+.rows{display:grid;grid-template-columns:132px 1fr;gap:12px 16px;font-size:15px}
+.rows dt{color:var(--ink3);font-size:13.5px}
+.rows dd{margin:0;word-break:break-all}
+.msg{padding:12px 15px;border-radius:9px;font-size:14px;margin-bottom:16px;border:1px solid var(--line);background:var(--bg-sunken);color:var(--ink2)}
+.msg.err{border-color:var(--ink);background:var(--bg-soft);color:var(--ink)}
+.msg:empty{display:none}
+.empty{padding:48px 16px;text-align:center;color:var(--ink3);font-size:15px}
+.empty b{display:block;color:var(--ink);font-weight:500;margin-bottom:6px;font-size:16px}
+.skeleton{height:14px;border-radius:4px;background:var(--bg-sunken);margin-bottom:10px;animation:p 1.2s infinite}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.45}}
+.foot{margin-top:38px;padding-top:18px;border-top:1px solid var(--line-soft);color:var(--ink4);font-size:13px}
+
+@media(max-width:900px){ .stats{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:760px){
+  .app.ready{flex-direction:column}
+  .sidebar{width:100%;height:auto;position:static;border-right:none;border-bottom:1px solid var(--line);flex-direction:row;align-items:center;gap:8px;padding:12px 14px;overflow-x:auto}
+  .brand{display:none}
+  .sidebar-foot{margin:0 0 0 auto;padding:0;border:none;display:flex;align-items:center;gap:12px}
+  .who{display:none}
+  .logout{margin:0}
+  .main{padding:22px 16px 52px}
+  .rows{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gate-inner">
+    <h1>猫猫头的七天</h1>
+    <p>成绩查询 · ScoreBot</p>
+    <button class="gate-btn" id="gateBtn">使用 司白画云盘 登录</button>
+    <div class="gate-note">使用 司白画云盘 账号登录<br>首次登录将自动创建账户</div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-name">猫猫头的七天</div>
+      <div class="brand-sub">SCOREBOT · GRADE</div>
+    </div>
+    <a class="nav-item active" data-page="overview" href="#">
+      <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l6-6 4 4 7-7"/></svg>
+      成绩总览
+    </a>
+    <a class="nav-item" data-page="exams" href="#">
+      <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      考试记录
+    </a>
+    <a class="nav-item" data-page="settings" href="#">
+      <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1A1.7 1.7 0 008 19.4a1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H2a2 2 0 110-4h.1A1.7 1.7 0 004.6 8a1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V2a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H22a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+      设置
+    </a>
+    <div class="sidebar-foot">
+      <div class="who"><b id="whoName">—</b><span id="whoMail"></span></div>
+      <button class="logout" id="btnLogout">退出登录</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section id="page-overview">
+      <div class="page-head">
+        <h1 class="page-title">成绩总览</h1>
+        <p class="page-desc" id="ovDesc">加载中…</p>
+      </div>
+      <div id="ovMsg" class="msg"></div>
+      <div class="stats" id="stats"></div>
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">成绩趋势</span>
+          <span class="panel-note" id="chartNote"></span>
+        </div>
+        <div class="panel-body"><div class="chart-wrap" id="chart"></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">最近考试</span>
+          <span class="panel-note" id="recentNote"></span>
+        </div>
+        <div id="recent"></div>
+      </div>
+    </section>
+
+    <section id="page-exams" style="display:none">
+      <div class="page-head">
+        <h1 class="page-title">考试记录</h1>
+        <p class="page-desc">点击任意一行查看该场考试的科目明细</p>
+      </div>
+      <div id="exMsg" class="msg"></div>
+      <div class="panel" id="unclaimedPanel" style="display:none">
+        <div class="panel-head">
+          <span class="panel-title">未认领考试</span>
+          <span class="panel-note" id="unclaimedNote"></span>
+        </div>
+        <div id="unclaimed"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">全部考试</span>
+          <span class="panel-note" id="allNote"></span>
+        </div>
+        <div id="all"></div>
+      </div>
+    </section>
+
+    <section id="page-settings" style="display:none">
+      <div class="page-head">
+        <h1 class="page-title">设置</h1>
+        <p class="page-desc">绑定查分平台账号后即可查询成绩</p>
+      </div>
+      <div id="setMsg" class="msg"></div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">已绑定账号</span>
+          <span class="panel-note" id="acctListNote"></span></div>
+        <div id="acctList"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">当前绑定</span></div>
+        <div class="panel-body">
+          <dl class="rows" id="bindInfo"><dt>状态</dt><dd>加载中…</dd></dl>
+          <div style="margin-top:16px"><button class="btn danger" id="btnUnbind">解除当前绑定</button></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">绑定查分账号</span></div>
+        <div class="panel-body" style="max-width:420px">
+          <div class="field">
+            <label>查分平台</label>
+            <select id="fPlatform">
+              <option value="4">七天网络</option>
+              <option value="1">好分数 · 学生版</option>
+              <option value="2">好分数 · 家长版</option>
+              <option value="3">百分智</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>账号（手机号或邮箱）</label>
+            <input type="text" id="fAccount" autocomplete="username" placeholder="15000000000">
+          </div>
+          <div class="field">
+            <label>密码</label>
+            <input type="password" id="fPassword" autocomplete="current-password" placeholder="七天网络登录密码">
+          </div>
+          <button class="btn" id="btnBind">绑定并验证</button>
+          <div class="gate-note" style="margin-top:14px">
+            出于功能实现的必要，账号与密码会保存在服务器（/opt/scorebot/data.json），
+            解除绑定后即被清除。建议使用简单密码。
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">账户</span></div>
+        <div class="panel-body"><dl class="rows" id="acctInfo"></dl></div>
+      </div>
+    </section>
+
+    <div class="foot">猫猫头的七天 · Powered by ScoreBot-Go</div>
+  </main>
+</div>
+
+<script>
+var API = '/sbapi/';
+var me = null, exams = [], curPage = 'overview';
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function fmt(n){ return (Math.round(n*10)/10).toString(); }
+
+function api(path, opts){
+  opts = opts || {};
+  opts.credentials = 'same-origin';
+  opts.headers = opts.headers || {};
+  if(opts.body && typeof opts.body === 'object'){
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(opts.body);
+  }
+  return fetch(API + path, opts).then(function(r){
+    if(r.status === 401){ showGate('登录状态已失效，请重新登录'); return null; }
+    return r.json().catch(function(){ return {ok:false,msg:'响应解析失败'}; });
+  });
+}
+
+function showGate(text){
+  $('gate').style.display = 'flex';
+  $('app').className = 'app';
+  var b = $('gateBtn');
+  b.textContent = text || '使用 司白画云盘 登录';
+  b.disabled = false;
+  b.onclick = function(){ goLogin(); };
+}
+
+function goLogin(){
+  var b = $('gateBtn');
+  b.disabled = true;
+  b.textContent = '正在跳转…';
+  location.href = API + 'auth/login';
+}
+
+function boot(){
+  var err = new URLSearchParams(location.search).get('error');
+  if(err){ showGate('登录被取消，请重新登录'); return; }
+  var q = new URLSearchParams(location.search);
+  if(q.get('code')){
+    var b = $('gateBtn');
+    b.disabled = true; b.textContent = '正在完成登录…';
+    return api('auth/callback', {method:'POST', body:{code:q.get('code'), state:q.get('state')||''}})
+      .then(function(res){
+        history.replaceState({}, '', location.pathname);
+        if(!res || !res.ok){ showGate('登录失败，请重新登录'); return; }
+        return afterLogin();
+      });
+  }
+  return api('auth/me').then(function(res){
+    if(!res){ showGate(); return; }
+    if(!res.logged_in){ showGate(); return; }
+    return afterLogin(res);
+  });
+}
+
+function afterLogin(res){
+  return (res ? Promise.resolve(res) : api('auth/me')).then(function(r){
+    if(!r || !r.logged_in){ location.href = API + 'auth/login'; return; }
+    me = r;
+    $('gate').style.display = 'none';
+    $('app').className = 'app ready';
+    $('whoName').textContent = r.nickname || r.email || '已登录';
+    $('whoMail').textContent = r.email || '';
+    $('acctInfo').innerHTML =
+      '<dt>用户标识</dt><dd>' + esc(r.user_id) + '</dd>' +
+      '<dt>昵称</dt><dd>' + esc(r.nickname || '—') + '</dd>' +
+      '<dt>邮箱</dt><dd>' + esc(r.email || '—') + '</dd>';
+    loadSettings();
+    loadExams();
+    loadUnclaimed();
+  });
+}
+
+function loadExams(){
+  if(!me || !me.bound){
+    $('ovDesc').textContent = '尚未绑定查分账号';
+    $('stats').innerHTML = '';
+    $('chart').innerHTML = '';
+    var tip = '<div class="empty"><b>请先绑定查分账号</b>在「设置」中绑定七天网络账号后即可查看成绩</div>';
+    $('recent').innerHTML = tip;
+    $('all').innerHTML = tip;
+    $('recentNote').textContent = ''; $('allNote').textContent = '';
+    return;
+  }
+  $('ovDesc').textContent = '正在同步考试数据…';
+  var sk = '<div style="padding:18px 16px"><div class="skeleton" style="width:60%"></div>' +
+           '<div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:45%"></div></div>';
+  $('recent').innerHTML = sk; $('all').innerHTML = sk;
+
+  return api('exams').then(function(res){
+    if(!res) return;
+    if(!res.ok){
+      $('ovMsg').className = 'msg err';
+      $('ovMsg').textContent = res.msg || '加载失败';
+      $('exMsg').className = 'msg err';
+      $('exMsg').textContent = res.msg || '加载失败';
+      $('ovDesc').textContent = '同步失败';
+      var e = '<div class="empty"><b>加载失败</b>' + esc(res.msg || '') + '</div>';
+      $('recent').innerHTML = e; $('all').innerHTML = e;
+      return;
+    }
+    $('ovMsg').textContent = ''; $('exMsg').textContent = '';
+    $('ovMsg').className = 'msg'; $('exMsg').className = 'msg';
+    exams = res.exams || [];
+    $('ovDesc').textContent =
+      (res.student ? res.student + ' · ' : '') + (res.school || '') +
+      (res.grade ? ' · ' + gradeCN(res.grade) : '') + ' · 同步于 ' + (res.synced_at || '');
+    renderStats();
+    renderChart();
+    renderTable($('recent'), exams.slice(0, 6), 'recentNote', '最近 6 场（共 ' + exams.length + ' 场）');
+    renderTable($('all'), exams, 'allNote', '共 ' + exams.length + ' 场');
+    if(res.notes && res.notes.length){
+      $('ovMsg').className = 'msg';
+      $('ovMsg').textContent = res.notes.join('　');
+    }
+  });
+}
+
+var GRADE_CN = {G1:'高一',G2:'高二',G3:'高三'};
+function gradeCN(g){ return GRADE_CN[String(g||'').toUpperCase()] || g || ''; }
+
+function renderStats(){
+  var scored = exams.filter(function(e){ return e.score_num > 0; });
+  var major = scored.filter(function(e){ return e.type === '月考'; });
+  var minor = scored.filter(function(e){ return e.type !== '月考'; });
+  var latest = scored.length ? scored[0] : null;
+  var best = null, sum = 0;
+  scored.forEach(function(e){
+    sum += e.score_num;
+    if(!best || e.score_num > best.score_num) best = e;
+  });
+  var prev = scored.length > 1 ? scored[1] : null;
+  var delta = (latest && prev) ? (latest.score_num - prev.score_num) : null;
+  var avgNote = major.length && minor.length
+    ? '月考均 ' + fmt(major.reduce(function(s,e){return s+e.score_num;},0)/major.length) +
+      ' · 周测均 ' + fmt(minor.reduce(function(s,e){return s+e.score_num;},0)/minor.length)
+    : scored.length + ' 场有成绩';
+  var cells = [
+    ['考试场次', exams.length, '全部已认领考试'],
+    ['最近得分', latest ? fmt(latest.score_num) : '—',
+      latest ? (delta === null ? latest.type + ' · ' + latest.name
+                               : (delta >= 0 ? '▲ ' : '▼ ') + fmt(Math.abs(delta)) + ' 较上次') : '暂无成绩'],
+    ['最高分', best ? fmt(best.score_num) : '—', best ? best.type + ' · ' + best.name : '暂无成绩'],
+    ['平均分', scored.length ? fmt(sum / scored.length) : '—', avgNote]
+  ];
+  $('stats').innerHTML = cells.map(function(c){
+    return '<div class="stat"><div class="stat-k">' + esc(c[0]) + '</div>' +
+           '<div class="stat-v">' + esc(String(c[1])) + '</div>' +
+           '<div class="stat-x">' + esc(c[2]) + '</div></div>';
+  }).join('');
+}
+
+function renderChart(){
+  var pts = exams.filter(function(e){ return e.score_num > 0; }).slice().reverse();
+  if(pts.length < 2){
+    $('chart').innerHTML = '<div class="empty" style="padding:60px 0"><b>暂无足够数据</b>至少需要两场有分数的考试才能绘制趋势</div>';
+    $('chartNote').textContent = '';
+    return;
+  }
+  var hasMajor = pts.some(function(p){ return p.type === '月考'; });
+  var hasMinor = pts.some(function(p){ return p.type !== '月考'; });
+  var W = 900, H = 232, padL = 50, padR = 18, padT = 20, padB = 40;
+  var vals = pts.map(function(p){ return p.score_num; });
+  var max = Math.max.apply(null, vals), min = Math.min.apply(null, vals);
+  var span = max - min; if(span < 10) span = 10;
+  var top = max + span * 0.18, bot = Math.max(0, min - span * 0.18);
+  var iw = W - padL - padR, ih = H - padT - padB;
+  var X = function(i){ return padL + iw * i / (pts.length - 1); };
+  var Y = function(v){ return padT + ih * (1 - (v - bot) / (top - bot)); };
+
+  var g = '';
+  for(var t = 0; t <= 4; t++){
+    var gy = padT + ih * t / 4;
+    var gv = top - (top - bot) * t / 4;
+    g += '<line class="chart-grid" x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '"/>';
+    g += '<text class="chart-label" x="' + (padL - 8) + '" y="' + (gy + 4) + '" text-anchor="end">' + Math.round(gv) + '</text>';
+  }
+  // 按考试类型分两条线：月考（大考总分）黑实线，周测（单科）灰虚线。
+  // 两类点按时间穿插，各自跨过对方连成完整趋势线，否则会被打散成孤立点。
+  var seriesOf = function(pred){
+    var seq = [];
+    pts.forEach(function(p, i){ if(pred(p)) seq.push(X(i) + ',' + Y(p.score_num)); });
+    return seq;
+  };
+  var dots = pts.map(function(p, i){
+    var major = p.type === '月考';
+    return '<circle class="chart-dot" cx="' + X(i) + '" cy="' + Y(p.score_num) + '" r="' + (major ? 3.4 : 2.6) +
+           '" stroke="' + (major ? '#000' : '#9a9a9a') + '"><title>' +
+           esc(p.name) + '（' + esc(p.type) + '）：' + fmt(p.score_num) + '</title></circle>';
+  }).join('');
+  var step = pts.length > 12 ? 2 : 1;
+  var marks = pts.map(function(p, i){
+    if(i % step) return '';
+    var major = p.type === '月考';
+    return '<text class="chart-val" x="' + X(i) + '" y="' + (Y(p.score_num) - 10) + '" text-anchor="middle"' +
+           (major ? '' : ' fill="#9a9a9a"') + '>' + fmt(p.score_num) + '</text>';
+  }).join('');
+  var lstep = Math.ceil(pts.length / 8);
+  var xlab = pts.map(function(p, i){
+    if(pts.length > 8 && i % lstep) return '';
+    return '<text class="chart-label" x="' + X(i) + '" y="' + (H - 14) + '" text-anchor="middle">' + esc((p.time || '').slice(5)) + '</text>';
+  }).join('');
+
+  var series = '';
+  var minorSeq = seriesOf(function(p){ return p.type !== '月考'; });
+  var majorSeq = seriesOf(function(p){ return p.type === '月考'; });
+  if(hasMinor && minorSeq.length > 1){
+    series += '<polyline points="' + minorSeq.join(' ') + '" fill="none" stroke="#b9b9b9" ' +
+              'stroke-width="1.3" stroke-dasharray="4 3" stroke-linejoin="round" stroke-linecap="round"/>';
+  }
+  if(hasMajor && majorSeq.length > 1){
+    series += '<polyline class="chart-line" points="' + majorSeq.join(' ') + '"/>';
+  }else if(!hasMajor){
+    series += '<polyline class="chart-line" points="' +
+      pts.map(function(p, i){ return X(i) + ',' + Y(p.score_num); }).join(' ') + '"/>';
+  }
+
+  $('chart').innerHTML =
+    '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '">' +
+    '<defs><linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0%" stop-color="#000" stop-opacity=".07"/>' +
+    '<stop offset="100%" stop-color="#000" stop-opacity="0"/></linearGradient></defs>' +
+    g + series + dots + marks + xlab +
+    '<line class="chart-axis" x1="' + padL + '" y1="' + (padT + ih) + '" x2="' + (W - padR) + '" y2="' + (padT + ih) + '"/>' +
+    '</svg>';
+  $('chartNote').textContent =
+    (hasMajor && hasMinor ? '━ 月考（总分）　╌ 周测（单科）　·　' : '') +
+    '按时间正序 · 共 ' + pts.length + ' 场';
+}
+
+function renderTable(box, list, noteId, note){
+  if(!list.length){
+    box.innerHTML = '<div class="empty"><b>暂无考试记录</b>已认领的考试会显示在这里</div>';
+    if(noteId) $(noteId).textContent = '';
+    return;
+  }
+  if(noteId) $(noteId).textContent = note || '';
+  var head = '<thead><tr><th style="width:38px"></th><th>考试名称</th><th style="width:110px">类型</th>' +
+             '<th style="width:124px">时间</th><th style="width:104px;text-align:right">总分</th></tr></thead>';
+  var rows = list.map(function(e){
+    return '<tbody>' +
+      '<tr data-guid="' + esc(e.guid) + '">' +
+      '<td><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></td>' +
+      '<td>' + esc(e.name) + '</td>' +
+      '<td class="dim">' + esc(e.type) + '</td>' +
+      '<td class="dim">' + esc(e.time) + '</td>' +
+      '<td class="num" style="text-align:right">' + (e.score_num > 0 ? fmt(e.score_num) : '—') + '</td>' +
+      '</tr></tbody>';
+  }).join('');
+  box.innerHTML = '<table>' + head + rows + '</table>';
+  box.querySelectorAll('tr[data-guid]').forEach(function(tr){
+    tr.onclick = function(){ toggleRow(tr); };
+  });
+}
+
+function toggleRow(tr){
+  var guid = tr.getAttribute('data-guid');
+  var body = tr.parentNode;
+  var open = tr.classList.contains('open');
+  var existing = body.querySelector('.detail-row');
+  if(existing) existing.remove();
+  if(open){ tr.classList.remove('open'); return; }
+  tr.classList.add('open');
+  var nr = document.createElement('tr');
+  nr.className = 'detail-row';
+  var td = document.createElement('td');
+  td.colSpan = 5;
+  td.innerHTML = '<div class="detail"><span class="detail-load">正在加载科目明细…</span></div>';
+  nr.appendChild(td);
+  body.appendChild(nr);
+  api('exam/detail?guid=' + encodeURIComponent(guid)).then(function(res){
+    if(!res) return;
+    if(!res.ok){
+      td.querySelector('.detail').innerHTML = '<span class="detail-load">' + esc(res.msg || '加载失败') + '</span>';
+      return;
+    }
+    var e = res.exam || {};
+    var html = '<div><b>' + esc(e.name) + '</b><span style="color:var(--ink3);margin-left:8px">' + esc(e.time) + '</span></div>';
+    if(res.detail_available && res.subjects.length){
+      html += '<div class="subj">' + res.subjects.map(function(s){
+        return '<div class="subj-item"><div class="subj-n">' + esc(s.name) + '</div>' +
+               '<div class="subj-s">' + esc(s.score) + '<span class="subj-f"> / ' + esc(s.full) + '</span></div></div>';
+      }).join('') + '</div>';
+    }else{
+      var reason = res.detail_error || '科目明细暂不可用';
+      if(/参数校验|4033|非法请求|405/.test(reason)){
+        reason = '科目明细需要七天网络会员权限（该账号会员已于 2026/03/07 到期），列表总分不受影响';
+      }
+      html += '<div style="margin-top:10px;color:var(--ink3);font-size:14px">总分 ' +
+        esc(e.score_num > 0 ? fmt(e.score_num) : '—') + '　·　' + esc(reason) + '</div>';
+    }
+    td.querySelector('.detail').innerHTML = html;
+  });
+}
+
+/* ---------- 未认领考试 / 认领 ---------- */
+function loadUnclaimed(){
+  if(!me || me.mode !== 'qt'){
+    $('unclaimedPanel').style.display = 'none';
+    return;
+  }
+  $('unclaimedPanel').style.display = '';
+  $('unclaimed').innerHTML = '<div style="padding:16px"><div class="skeleton" style="width:50%"></div></div>';
+  api('unclaimed').then(function(res){
+    if(!res) return;
+    if(!res.ok){
+      $('unclaimed').innerHTML = '<div class="empty" style="padding:26px 16px">' + esc(res.msg || '加载失败') + '</div>';
+      $('unclaimedNote').textContent = '';
+      return;
+    }
+    var items = res.items || [];
+    $('unclaimedNote').textContent = items.length ? '共 ' + items.length + ' 场待认领' : '';
+    if(!items.length){
+      $('unclaimed').innerHTML = '<div class="empty" style="padding:26px 16px">没有待认领的考试</div>';
+      return;
+    }
+    $('unclaimed').innerHTML = '<table><thead><tr>' +
+      '<th>考试名称</th><th style="width:120px">时间</th>' +
+      '<th style="width:215px">选择学号</th><th style="width:96px"></th></tr></thead>' +
+      items.map(function(it, i){
+        var opts = (it.candidates || []).map(function(c){
+          return '<option value="' + esc(c) + '">' + esc(c) + '</option>';
+        }).join('');
+        if(!opts) opts = '<option value="">（无可选项）</option>';
+        return '<tr><td>' + esc(it.name) +
+          (it.school_name ? '<span class="tag" style="margin-left:8px">' + esc(it.school_name) + '</span>' : '') +
+          '</td><td class="dim">' + esc(it.time) + '</td>' +
+          '<td><select id="uc-' + i + '" class="sm">' + opts + '</select></td>' +
+          '<td style="text-align:right"><button class="btn ghost sm" ' +
+          'data-guid="' + esc(it.guid) + '" data-idx="' + i + '">认领</button></td></tr>';
+      }).join('') + '</table>';
+    $('unclaimed').querySelectorAll('button[data-guid]').forEach(function(b){
+      b.onclick = function(){ claimExam(b); };
+    });
+  });
+}
+
+function claimExam(btn){
+  var guid = btn.getAttribute('data-guid');
+  var sel = $('uc-' + btn.getAttribute('data-idx'));
+  var code = sel ? sel.value : '';
+  if(!code){ alert('请先选择学号'); return; }
+  btn.disabled = true; btn.textContent = '认领中…';
+  api('claim', {method:'POST', body:{exam_guid: guid, student_code: code}}).then(function(res){
+    if(!res) return;
+    if(!res.ok){
+      alert('认领失败：' + (res.msg || '未知错误'));
+      btn.disabled = false; btn.textContent = '认领';
+      return;
+    }
+    loadUnclaimed();
+    loadExams();
+  });
+}
+
+/* ---------- 设置 ---------- */
+function renderAccounts(list){
+  var box = $('acctList');
+  if(!list || !list.length){
+    box.innerHTML = '<div class="empty" style="padding:26px 16px">还没有绑定任何查分账号</div>';
+    $('acctListNote').textContent = '';
+    return;
+  }
+  $('acctListNote').textContent = '共 ' + list.length + ' 个，可随时切换';
+  box.innerHTML = '<table><thead><tr>' +
+    '<th style="width:132px">平台</th><th>账号 / 姓名</th>' +
+    '<th style="width:136px">学校</th><th style="width:112px"></th></tr></thead>' +
+    list.map(function(a){
+      var who = esc(a.account || '—') + (a.name ? '<span style="color:var(--ink3)"> · ' + esc(a.name) + '</span>' : '');
+      var right = a.current
+        ? '<span class="tag">当前使用</span>'
+        : '<button class="btn ghost sm" data-mode="' + esc(a.mode) + '">切换</button>';
+      return '<tr><td>' + esc(a.label || a.mode) + '</td><td>' + who + '</td>' +
+             '<td class="dim">' + esc(a.school || '—') + '</td>' +
+             '<td style="text-align:right">' + right + '</td></tr>';
+    }).join('') + '</table>';
+  box.querySelectorAll('button[data-mode]').forEach(function(b){
+    b.onclick = function(){ switchAccount(b.getAttribute('data-mode'), b); };
+  });
+}
+
+function switchAccount(mode, btn){
+  btn.disabled = true; btn.textContent = '切换中…';
+  api('switch', {method:'POST', body:{mode: mode}}).then(function(res){
+    if(!res) return;
+    var box = $('setMsg');
+    if(!res.ok){
+      box.className = 'msg err'; box.textContent = res.msg || '切换失败';
+      loadSettings(); return;
+    }
+    box.className = 'msg';
+    box.textContent = '已切换到 ' + (res.label || mode);
+    me.bound = true; me.mode = mode;
+    loadSettings();
+    loadExams();
+    loadUnclaimed();
+  });
+}
+
+function loadSettings(){
+  api('profile').then(function(res){
+    if(!res) return;
+    renderAccounts(res.accounts);
+    var rows;
+    if(res.bound){
+      rows = '<dt>绑定状态</dt><dd>已绑定 · ' + esc(res.mode_label) + '</dd>' +
+             '<dt>账号</dt><dd>' + esc(res.account) + '</dd>' +
+             '<dt>姓名</dt><dd>' + esc(res.name || '—') + '</dd>' +
+             '<dt>学校</dt><dd>' + esc(res.school || '—') + '</dd>' +
+             '<dt>年级</dt><dd>' + esc(res.grade || '—') + '</dd>' +
+             (res.bound_at ? '<dt>绑定时间</dt><dd>' + esc(String(res.bound_at).slice(0,19).replace('T',' ')) + '</dd>' : '');
+      $('btnUnbind').style.display = '';
+    }else{
+      rows = '<dt>绑定状态</dt><dd>未绑定</dd>';
+      $('btnUnbind').style.display = 'none';
+    }
+    $('bindInfo').innerHTML = rows;
+  });
+}
+
+function bind(){
+  var acc = $('fAccount').value.trim(), pw = $('fPassword').value.trim();
+  var box = $('setMsg');
+  box.className = 'msg'; box.textContent = '';
+  if(!acc || !pw){ box.className = 'msg err'; box.textContent = '请填写账号和密码'; return; }
+  var btn = $('btnBind');
+  btn.disabled = true; btn.textContent = '正在验证…';
+  api('bind', {method:'POST', body:{platform:$('fPlatform').value, account:acc, password:pw}})
+    .then(function(res){
+      btn.disabled = false; btn.textContent = '绑定并验证';
+      if(!res) return;
+      if(!res.ok){ box.className = 'msg err'; box.textContent = res.msg || '绑定失败'; return; }
+      box.className = 'msg';
+      box.textContent = '绑定成功：' + (res.name || '') + (res.school ? ' · ' + res.school : '');
+      $('fPassword').value = '';
+      me.bound = true;
+      me.mode = res.platform === '4' ? 'qt' : (res.platform || '');
+      loadSettings();
+      loadExams();
+      loadUnclaimed();
+    });
+}
+
+function unbind(){
+  if(!confirm('解除绑定后，服务器上保存的账号和密码将被清除，确定继续？')) return;
+  api('unbind', {method:'POST', body:{}}).then(function(res){
+    if(!res) return;
+    var box = $('setMsg');
+    box.className = res.ok ? 'msg' : 'msg err';
+    box.textContent = res.ok ? '已解除绑定' : (res.msg || '操作失败');
+    me.bound = false;
+    loadSettings();
+    loadExams();
+    loadUnclaimed();
+  });
+}
+
+function go(page){
+  curPage = page;
+  ['overview','exams','settings'].forEach(function(p){
+    $('page-' + p).style.display = (p === page) ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(function(n){
+    n.classList.toggle('active', n.getAttribute('data-page') === page);
+  });
+  window.scrollTo(0, 0);
+}
+
+document.querySelectorAll('.nav-item').forEach(function(n){
+  n.onclick = function(e){ e.preventDefault(); go(n.getAttribute('data-page')); };
+});
+function logout(){
+  var b = $('btnLogout');
+  if(b.disabled) return;
+  b.disabled = true; b.textContent = '正在退出…';
+  api('auth/logout', {method:'POST'}).then(function(){
+    // 退出后回到本站登录页，不自动跳转单点登录地址
+    me = null; exams = [];
+    history.replaceState({}, '', location.pathname);
+    go('overview');
+    ['ovMsg','exMsg','setMsg'].forEach(function(id){
+      $(id).className = 'msg'; $(id).textContent = '';
+    });
+    ['stats','chart','recent','all','unclaimed','acctList'].forEach(function(id){ $(id).innerHTML = ''; });
+    $('ovDesc').textContent = '';
+    $('bindInfo').innerHTML = '<dt>状态</dt><dd>加载中…</dd>';
+    $('acctInfo').innerHTML = '';
+    $('unclaimedPanel').style.display = 'none';
+    b.disabled = false; b.textContent = '退出登录';
+    showGate('已退出登录 · 使用 司白画云盘 登录');
+  }, function(){
+    b.disabled = false; b.textContent = '退出登录';
+    alert('退出失败，请稍后重试');
+  });
+}
+
+$('btnBind').onclick = bind;
+$('btnUnbind').onclick = unbind;
+$('btnLogout').onclick = logout;
+
+boot();
+</script>
+</body>
+</html>
