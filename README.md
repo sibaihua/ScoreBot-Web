@@ -1,5 +1,18 @@
 # ScoreBot-Go / Web 版（猫猫头的七天）
 
+## 预览
+
+<p align="center">
+  <img src="docs/screenshot-login.png" width="30%" alt="登录页">
+  &nbsp;
+  <img src="docs/screenshot-overview.png" width="66%" alt="成绩总览">
+</p>
+<p align="center">
+  <img src="docs/screenshot-exams.png" width="66%" alt="考试记录 · 科目明细">
+</p>
+
+> 截图为演示数据（示例同学 / 示例市第一中学），非真实账号信息。
+
 > 下面是 Web 版说明。原命令行 / QQ Bot 版的说明保留在文末「原版 ScoreBot-Go 说明」之后。
 
 Web 版把原来的机器人命令流改成一个**单页网页应用**：浏览器里登录、绑定查分账号、看成绩趋势和考试记录，不再需要一条条发命令。
